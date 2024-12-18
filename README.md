@@ -1,3 +1,3 @@
 # netio (net-eye-oh)
 
-A lightweight Go package for handling HTTP JSON requests and responses
+A lightweight stable Go helper package for handling HTTP JSON requests and responses
