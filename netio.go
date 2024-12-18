@@ -1,3 +1,5 @@
+// Package netio provides utilities that help with handling json write and read operations
+// from HTTP requests and responses.
 package netio
 
 import (
@@ -7,11 +9,16 @@ import (
 )
 
 var (
+	// ErrNetioMarshalFailure is returned when json marshaling of the response data fails.
 	ErrNetioMarshalFailure = errors.New("error marshalling data")
 )
 
+// An Envelope wraps response data for consistent JSON output.
 type Envelope map[string]any
 
+// Write is a helper that writes a JSON response with the given status code and response data.
+// It automatically handles JSON formatting and sets appropriate headers.
+// It returns either an error or nil.
 func Write(w http.ResponseWriter, status int, data Envelope, headers http.Header) error {
 	json, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
