@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -103,6 +104,50 @@ func TestWrite(t *testing.T) {
 	}
 }
 
-// func TestRead(t *testing.T) {
-//
-// }
+func TestRead(t *testing.T) {
+	tests := []struct {
+		name    string
+		body    string
+		wantErr bool
+	}{
+		{
+			name:    "valid json",
+			body:    `{"name": "test", "age": 30}`,
+			wantErr: false,
+		},
+		{
+			name:    "invalid json",
+			body:    `{"name": "test"`,
+			wantErr: true,
+		},
+		{
+			name:    "multiple json objects",
+			body:    `{"name": "test"}{"age": 30}`,
+			wantErr: true,
+		},
+		{
+			name:    "empty body",
+			body:    "",
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// create request with test body
+			r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.body))
+			w := httptest.NewRecorder()
+
+			// create destination
+			var dst struct {
+				Name string `json:"name"`
+				Age  int    `json:"age"`
+			}
+
+			err := Read(w, r, &dst)
+			if (err != nil) != test.wantErr {
+				t.Errorf("Read() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
