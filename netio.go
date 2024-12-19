@@ -5,12 +5,18 @@ package netio
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 )
 
-// ErrNetioMarshalFailure is returned when json marshaling of the response data fails.
 var (
+	// ErrNetioMarshalFailure is returned when json marshaling of the response data fails.
 	ErrNetioMarshalFailure = errors.New("error marshalling data")
+	JsonSyntaxError        *json.SyntaxError
+	UnmarshalTypeError     *json.UnmarshalTypeError
+	InvalidUnmarshalError  *json.InvalidUnmarshalError
+	MaxBytesError          *http.MaxBytesError
 )
 
 // Envelope wraps response data for consistent JSON output.
@@ -61,6 +67,36 @@ func Write(w http.ResponseWriter, status int, data Envelope, headers http.Header
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(json)
+
+	return nil
+}
+
+func Read(w http.ResponseWriter, r *http.Request, dst any) error {
+	// TODO: make this value configurable
+	var max int64 = 1_048_576
+
+	// set maximum bytes to receive to prevent/mitigate DOS on API
+	http.MaxBytesReader(w, r.Body, int64(max))
+
+	// configure decoder settings
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+
+	// decode request body to destination (dst any)
+	err := dec.Decode(dst)
+	if err != nil {
+		return err
+	}
+
+	// try decode again into an anonymous dst
+	// look for io.EOF. This is to prevent multiple
+	// json bodies being used i.e.
+	// {"body1": "values"}{"body2": "values"}
+	s := &struct{}{}
+	err = dec.Decode(s)
+	if !errors.Is(err, io.EOF) {
+		return errors.New("body can only contain a single json value")
+	}
 
 	return nil
 }
