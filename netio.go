@@ -13,6 +13,7 @@ import (
 var (
 	// ErrNetioMarshalFailure is returned when json marshaling of the response data fails.
 	ErrNetioMarshalFailure = errors.New("error marshalling data")
+	ErrMultipleJsonBodies  = errors.New("body can only contain a single json value")
 )
 
 // Envelope wraps response data for consistent JSON output.
@@ -63,7 +64,7 @@ func Read(w http.ResponseWriter, r *http.Request, dst any) error {
 	// decode request body to destination (dst any)
 	err := dec.Decode(dst)
 	if err != nil {
-		return fmt.Errorf("read json: %w", err)
+		return fmt.Errorf("netio.Read(): %w", err)
 	}
 
 	// try decode again into an anonymous dst
@@ -73,7 +74,7 @@ func Read(w http.ResponseWriter, r *http.Request, dst any) error {
 	s := &struct{}{}
 	err = dec.Decode(s)
 	if !errors.Is(err, io.EOF) {
-		return errors.New("body can only contain a single json value")
+		return ErrMultipleJsonBodies
 	}
 
 	return nil
