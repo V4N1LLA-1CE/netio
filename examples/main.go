@@ -30,8 +30,8 @@ func exampleHandler(w http.ResponseWriter, r *http.Request) {
 	// netio.Read() will
 	err := netio.Read(w, r, &input)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		// handle error
+		log.Fatal(err)
 	}
 	// write response
 	//
@@ -49,7 +49,7 @@ func exampleHandler(w http.ResponseWriter, r *http.Request) {
 	// this ensures good JSON response structures
 	err = netio.Write(w, http.StatusOK, netio.Envelope{"example response": input}, headers)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		// handle error
+		log.Fatal(err)
 	}
 }
