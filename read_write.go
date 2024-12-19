@@ -1,5 +1,6 @@
-// Package netio provides utilities that help with handling json write and read operations
-// from HTTP requests and responses.
+// Package netio provides lightweight utilities that simplify common
+// webserver development tasks in Go. This package aims to reduce boilerplate
+// code for simple components so the developer can focus on application logic.
 package netio
 
 import (
@@ -13,17 +14,45 @@ import (
 var (
 	// ErrNetioMarshalFailure is returned when json marshaling of the response data fails.
 	ErrNetioMarshalFailure = errors.New("error marshalling data")
-	ErrMultipleJsonBodies  = errors.New("body can only contain a single json value")
+	// ErrMultipleJsonBodies is returned when Read detects more than one body i.e. {}{}
+	ErrMultipleJsonBodies = errors.New("body can only contain a single json value")
 )
 
-// Envelope wraps response data for consistent JSON output.
-// It uses a map with string keys and any values to provide flexibility
-// in the response structure while maintaining JSON compatibility.
+// Envelope represents a wrapper for HTTP response data in JSON format.
+// It uses a map with string keys and interface{} values to provide
+// flexibility in the response structure while maintaining JSON compatibility.
+//
+// Example:
+//
+//	type metadata struct {
+//	  ...
+//	}
+//
+//	m := metadata{...}
+//
+//	// good practice to send JSON with envelope wrapper
+//	responseData := netio.Envelope{
+//	    "metadata": m,
+//	}
 type Envelope map[string]any
 
-// Write is a helper that writes a JSON response with the given status code and response data.
-// It automatically handles JSON formatting and sets appropriate headers.
-// It returns either an error or nil.
+// Write sends a JSON response with the given status code and response data.
+// It handles JSON formatting, sets appropriate headers, and provides pretty-printing
+// for better CLI tool readability.
+//
+// Parameters:
+//   - w: The http.ResponseWriter to write the response to
+//   - status: HTTP status code to send
+//   - data: The Envelope containing response data to be JSON encoded
+//   - headers: Additional HTTP headers to include in the response
+//
+// Returns an error if JSON marshaling fails, nil otherwise.
+//
+// Example:
+//
+//	env := netio.Envelope{"users": users}
+//	headers := http.Header{"X-Custom": []string{"value"}}
+//	err := netio.Write(w, http.StatusOK, env, headers)
 func Write(w http.ResponseWriter, status int, data Envelope, headers http.Header) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -46,10 +75,24 @@ func Write(w http.ResponseWriter, status int, data Envelope, headers http.Header
 	return nil
 }
 
-// Read is a helper that reads a JSON response from the request into a dst struct.
-// If request size is too big, this helper returns an error.
-// Currently, max request size is hardcoded to 1MB for the request body
-// It returns either an error or nil.
+// Read decodes a JSON request body into the provided destination struct.
+// It enforces a maximum request size of 1MB and validates that only a single
+// JSON object is present in the request body.
+//
+// Parameters:
+//   - w: The http.ResponseWriter (used for MaxBytesReader)
+//   - r: The *http.Request containing the JSON body
+//   - dst: Non-nil pointer to the destination struct where the JSON will be decoded
+//
+// Example:
+//
+//	var input struct {
+//	    Name string `json:"name"`
+//	    Age  int    `json:"age"`
+//	}
+//	if err := netio.Read(w, r, &input); err != nil {
+//	    // Handle error...
+//	}
 func Read(w http.ResponseWriter, r *http.Request, dst any) error {
 	// TODO: make this value configurable
 	var max int64 = 1_048_576
