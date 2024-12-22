@@ -1,5 +1,5 @@
 # netio ["net-eye-oh"]
-A lightweight package that simplifies common web server development tasks in Go. Write less boilerplate and focus on building your application logic.
+A stable package that simplifies common web server development tasks in Go. Write less boilerplate and focus on building your application logic.
 
 ## Overview
 I made this package to serve as my own toolkit of reusable components and utilities that I've found myself repeatedly implementing in Go webserver projects. Instead of rewriting these common patterns for each new project, this package provides a centralised, maintained collection of helpers.
