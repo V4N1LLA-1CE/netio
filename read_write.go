@@ -54,7 +54,12 @@ type Envelope map[string]any
 //	headers := http.Header{"X-Custom": []string{"value"}}
 //	err := netio.Write(w, http.StatusOK, env, headers)
 func Write(w http.ResponseWriter, status int, data Envelope, headers http.Header) error {
+	// header good practices (OWASP)
+	// see more at https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "DENY")
+
 	w.WriteHeader(status)
 
 	json, err := json.MarshalIndent(data, "", "\t")
