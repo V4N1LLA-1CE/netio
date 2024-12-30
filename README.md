@@ -10,6 +10,16 @@ As new common patterns emerge in my web development work, I'll continue to add a
 ```bash
 go get github.com/V4N1LLA-1CE/netio@latest
 ```
+
+## Notes:
+- **`Netio.Write()`** automatically sets the following headers by default; Make sure to override these using your own headers if needed.
+
+```go
+w.Header().Set("Content-Type", "application/json")
+w.Header().Set("X-Content-Type-Options", "nosniff")
+w.Header().Set("X-Frame-Options", "DENY")
+```
+
 ## Usage
 ### Read JSON from Request
 ```go
@@ -70,5 +80,14 @@ v.Check(!netio.HasDuplicates(interests), "interests", "Duplicate interests found
 
 if !v.Valid() {
    fmt.Println("Errors:", v.Errors)
+}
+```
+
+### JSON Http Error Wrapper
+```go
+err := netio.Read(w, r, &input)
+if err != nil {
+    netio.Error(w, err.Error(), http.StatusUnprocessableEntity)
+    return
 }
 ```
