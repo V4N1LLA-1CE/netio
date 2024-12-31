@@ -29,9 +29,9 @@ var ErrorFallback = Envelope{"error": "internal server error"}
 //	    Field: "email",
 //	    Message: "invalid format",
 //	}, http.StatusBadRequest)
-func Error(w http.ResponseWriter, error any, code int) {
+func Error(w http.ResponseWriter, key string, error any, code int) {
 	// wrap error with envelope
-	e := Envelope{"error_response": error}
+	e := Envelope{key: error}
 	if err := Write(w, code, e, nil); err != nil {
 		// if failed to write, fallback to writing generic error
 		Write(w, http.StatusInternalServerError, ErrorFallback, nil)
