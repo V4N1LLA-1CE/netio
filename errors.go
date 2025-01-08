@@ -99,7 +99,7 @@ func BuildErrorWithValidation(status int, message string, v *Validator) ErrorRes
 //
 //	w - The response writer to output the error to
 //	key - The JSON key to wrap the error in (defaults to "error" if empty)
-//	e - The error to include (defaults to NetioUnknownErr if nil)
+//	e - The error to include (if v is provided, this is ignored and set to NetioValidationErr)
 //	code - The HTTP status code to send (e.g., http.StatusUnprocessableEntity)
 //	v - Optional validator containing field-specific validation errors
 //
