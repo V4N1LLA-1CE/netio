@@ -21,7 +21,7 @@ w.Header().Set("X-Frame-Options", "DENY")
 ```
 
 ## Usage
-### Read JSON from Request
+#### Read JSON from Request 
 ```go
 func exampleHandler(w http.ResponseWriter, r *http.Request) {
     var input struct {
@@ -36,7 +36,7 @@ func exampleHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 ```
-### Write JSON to Response
+#### Write JSON to Response
 ```go
 func exampleHandler(w http.ResponseWriter, r *http.Request) {
     responseData := map[string]any{
@@ -62,7 +62,7 @@ func exampleHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 ```
-### Validators for Data Validation
+#### Validators
 ```go
 v := netio.NewValidator()
 
@@ -83,11 +83,70 @@ if !v.Valid() {
 }
 ```
 
-### JSON Http Error Wrapper
+#### JSON HTTP Errors
 ```go
-err := netio.Read(w, r, &input)
-if err != nil {
-    netio.Error(w, err.Error(), http.StatusUnprocessableEntity)
+// read JSON input
+var input struct {
+    Email string `json:"email"`
+    Age   int    `json:"age"`
+}
+
+// read request body into input struct
+if err := netio.Read(w, r, &input); err != nil {
+    netio.Error(w, "error", err, http.StatusBadRequest, nil)
+    return
+}
+
+// validate input
+v := netio.NewValidator()
+emailRx := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+v.Check(netio.Matches(input.Email, emailRx), "email", "invalid email format")
+v.Check(input.Age >= 18, "age", "must be over 18")
+
+if !v.Valid() {
+    netio.Error(w, "error", nil, http.StatusUnprocessableEntity, v)
     return
 }
 ```
+#### Error response examples
+```bash
+# Request with no validation errors
+curl -X POST 'localhost:8080/register' \
+  -H "Content-Type: application/json" \
+  -d '{invalid json'
+
+# Response (400 Bad Request)
+{
+    "error": {
+        "status": 400,
+        "status_text": "Bad Request",
+        "message": "netio.Read(): invalid character 'i' looking for beginning of object key string",
+        "timestamp": "2025-01-08T18:45:33.536576+11:00"
+    }
+}
+```
+
+```bash
+# Request with validation errors
+curl -X POST 'localhost:8080/register' \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "notanemail",
+    "age": 16
+  }'
+
+# Response (422 Unprocessable Entity)
+{
+    "error": {
+        "status": 422,
+        "status_text": "Unprocessable Entity",
+        "message": "validation failed",
+        "validation": {
+            "email": "invalid email format",
+            "age": "must be over 18"
+        },
+        "timestamp": "2025-01-08T18:46:33.536576+11:00"
+    }
+}
+```
+
