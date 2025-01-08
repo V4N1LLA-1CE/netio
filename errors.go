@@ -67,19 +67,56 @@ func BuildErrorWithValidation(status int, message string, v *Validator) ErrorRes
 	}
 }
 
-// Error writes an error response to the given http.ResponseWriter. It handles both
-// regular errors and validation errors, wrapping them in the standard ErrorResponse
-// structure.
+// Error writes a standardized error response to an HTTP response writer. It supports
+// both simple errors and validation errors, automatically formatting them into a
+// consistent JSON structure.
+//
+// This utility works in conjunction with netio.Validator for input validation:
+//
+//	v := netio.NewValidator()
+//	v.Check(len(name) >= 2, "name", "too short")
+//	v.Check(age >= 18, "age", "must be over 18")
+//	if !v.Valid() {
+//	    netio.Error(w, "error", nil, http.StatusUnprocessableEntity, v)
+//	}
+//
+// The error response will be wrapped in an envelope using the provided key:
+//
+//	{
+//	    "error": {
+//	        "status": 422,
+//	        "status_text": "Unprocessable Entity",
+//	        "message": "validation failed",
+//	        "validation": {     // Only present with validator
+//	            "name": "too short",
+//	            "age": "must be over 18"
+//	        },
+//	        "timestamp": "2024-01-08T10:00:00Z"
+//	    }
+//	}
 //
 // Parameters:
-//   - w: The http.ResponseWriter to write the response to
-//   - key: The JSON key for the error response (defaults to "error" if empty)
-//   - e: The error to include in the response (defaults to NetioUnknownErr if nil)
-//   - code: The HTTP status code to use
-//   - v: Optional Validator containing validation errors
 //
-// If writing the error response fails, it falls back to writing a generic
-// error response using ErrorFallback().
+//	w - The response writer to output the error to
+//	key - The JSON key to wrap the error in (defaults to "error" if empty)
+//	e - The error to include (defaults to NetioUnknownErr if nil)
+//	code - The HTTP status code to send (e.g., http.StatusUnprocessableEntity)
+//	v - Optional validator containing field-specific validation errors
+//
+// Example usage:
+//
+//	Simple error:
+//	  netio.Error(w, "error", err, http.StatusBadRequest, nil)
+//
+//	Validation error:
+//	  v := netio.NewValidator()
+//	  v.Check(len(name) >= 2, "name", "too short")
+//	  if !v.Valid() {
+//	      netio.Error(w, "error", nil, http.StatusUnprocessableEntity, v)
+//	  }
+//
+// If the error response cannot be written, it falls back to a generic 500 error
+// using ErrorFallback().
 func Error(w http.ResponseWriter, key string, e error, code int, v *Validator) {
 	if e == nil {
 		e = NetioUnknownErr
