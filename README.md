@@ -20,6 +20,8 @@ w.Header().Set("X-Content-Type-Options", "nosniff")
 w.Header().Set("X-Frame-Options", "DENY")
 ```
 
+- **`Netio.Write()`** can also be used to write your own custom error response structures
+  
 ## Usage
 #### Read JSON from Request 
 ```go
@@ -85,32 +87,33 @@ if !v.Valid() {
 
 #### JSON HTTP Errors
 ```go
-// read JSON input
-var input struct {
-    Email string `json:"email"`
-    Age   int    `json:"age"`
-}
+func registerHandler(w http.ResponseWriter, r *http.Request) {
+    // read JSON input
+    var input struct {
+    	Email string `json:"email"`
+    	Age   int    `json:"age"`
+    }
 
-// read request body into input struct
-if err := netio.Read(w, r, &input); err != nil {
-    netio.Error(w, "error", err, http.StatusBadRequest, nil)
-    return
-}
+    // read request body into input struct
+    if err := netio.Read(w, r, &input); err != nil {
+    	netio.Error(w, "error", http.StatusBadRequest, nil)
+    	return
+    }
 
-// validate input
-v := netio.NewValidator()
-emailRx := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-v.Check(netio.Matches(input.Email, emailRx), "email", "invalid email format")
-v.Check(input.Age >= 18, "age", "must be over 18")
+    // validate input
+    v := netio.NewValidator()
+    emailRx := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+    v.Check(netio.Matches(input.Email, emailRx), "email", "invalid email format")
+    v.Check(input.Age >= 18, "age", "must be over 18")
 
-if !v.Valid() {
-    netio.Error(w, "error", nil, http.StatusUnprocessableEntity, v)
-    return
-}
+    if !v.Valid() {
+    	netio.Error(w, "error", http.StatusUnprocessableEntity, v)
+    	return
+    }
 ```
 #### Error response examples
 ```bash
-# Request with no validation errors
+# Request with malformed JSON
 curl -X POST 'localhost:8080/register' \
   -H "Content-Type: application/json" \
   -d '{invalid json'
@@ -119,8 +122,7 @@ curl -X POST 'localhost:8080/register' \
 {
     "error": {
         "status": 400,
-        "status_text": "Bad Request",
-        "message": "netio.Read(): invalid character 'i' looking for beginning of object key string",
+        "message": "Bad Request",
         "timestamp": "2025-01-08T18:45:33.536576+11:00"
     }
 }
@@ -139,8 +141,7 @@ curl -X POST 'localhost:8080/register' \
 {
     "error": {
         "status": 422,
-        "status_text": "Unprocessable Entity",
-        "message": "validation failed",
+        "message": "Unprocessable Entity",
         "validation": {
             "email": "invalid email format",
             "age": "must be over 18"
