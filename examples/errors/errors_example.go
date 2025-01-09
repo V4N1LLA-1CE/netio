@@ -23,7 +23,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 
 	// read request body into input struct
 	if err := netio.Read(w, r, &input); err != nil {
-		netio.Error(w, "error", err, http.StatusBadRequest, nil)
+		netio.Error(w, "error", http.StatusBadRequest, nil)
 		return
 	}
 
@@ -34,7 +34,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	v.Check(input.Age >= 18, "age", "must be over 18")
 
 	if !v.Valid() {
-		netio.Error(w, "error", nil, http.StatusUnprocessableEntity, v)
+		netio.Error(w, "error", http.StatusUnprocessableEntity, v)
 		return
 	}
 
@@ -46,6 +46,6 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	if err := netio.Write(w, http.StatusCreated, response, nil); err != nil {
-		netio.Error(w, "error", err, http.StatusInternalServerError, nil)
+		netio.Error(w, "error", http.StatusInternalServerError, nil)
 	}
 }
